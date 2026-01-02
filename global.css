@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Onyx Global Styles */
+:root {
+  --onyx-bg: #0A0A0A;
+  --onyx-surface: #141414;
+  --onyx-action: #FF6B35;
+}
