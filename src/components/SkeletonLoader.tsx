@@ -95,6 +95,63 @@ export const SkeletonTaskList: React.FC<{ count?: number }> = ({ count = 3 }) =>
     </View>
 );
 
+export const SkeletonHistory: React.FC = () => (
+    <View style={{ gap: 20 }}>
+        {/* Stats Section Skeleton */}
+        <View style={styles.statsSkeleton}>
+            <Skeleton width="30%" height={60} borderRadius={borderRadius.lg} />
+            <Skeleton width="30%" height={60} borderRadius={borderRadius.lg} />
+            <Skeleton width="30%" height={60} borderRadius={borderRadius.lg} />
+        </View>
+
+        {/* Chart Section Skeleton */}
+        <View style={styles.chartSkeleton}>
+            <Skeleton width="100%" height={140} borderRadius={borderRadius.lg} />
+        </View>
+
+        {/* List Items Skeleton */}
+        <View style={{ gap: 12 }}>
+            <Skeleton width="60%" height={14} style={{ marginBottom: 8 }} />
+            {Array.from({ length: 4 }).map((_, i) => (
+                <View key={i} style={styles.historyItemSkeleton}>
+                    <View style={{ flex: 1, gap: 8 }}>
+                        <Skeleton width="80%" height={16} />
+                        <Skeleton width="40%" height={12} />
+                    </View>
+                    <Skeleton width={40} height={40} borderRadius={20} />
+                </View>
+            ))}
+        </View>
+    </View>
+);
+
+export const SkeletonSettings: React.FC = () => (
+    <View style={{ gap: 24, paddingHorizontal: 20, paddingTop: 20 }}>
+        {/* Profile Section */}
+        <View style={{ gap: 12 }}>
+            <Skeleton width={80} height={12} />
+            <Skeleton width="100%" height={120} borderRadius={borderRadius.lg} />
+        </View>
+
+        {/* Setting Sections */}
+        {Array.from({ length: 3 }).map((_, i) => (
+            <View key={i} style={{ gap: 12 }}>
+                <Skeleton width={100} height={12} />
+                <View style={{ gap: 8 }}>
+                    <View style={styles.settingsRowSkeleton}>
+                        <Skeleton width="60%" height={16} />
+                        <Skeleton width={40} height={24} borderRadius={12} />
+                    </View>
+                    <View style={styles.settingsRowSkeleton}>
+                        <Skeleton width="40%" height={16} />
+                        <Skeleton width={40} height={24} borderRadius={12} />
+                    </View>
+                </View>
+            </View>
+        ))}
+    </View>
+);
+
 const styles = StyleSheet.create({
     skeleton: {
         backgroundColor: colors.elevated,
@@ -138,6 +195,37 @@ const styles = StyleSheet.create({
     taskItemContent: {
         flex: 1,
         marginLeft: 12,
+    },
+    statsSkeleton: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    chartSkeleton: {
+        backgroundColor: colors.surface,
+        padding: 16,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    historyItemSkeleton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    settingsRowSkeleton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
 });
 

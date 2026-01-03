@@ -5,6 +5,18 @@ import { HapticButton } from '../HapticButton';
 import { colors, spacing, typography, borderRadius } from '@/constants/theme';
 import { MoodLevel } from '@/types';
 import { MOOD_EMOJIS } from '@/constants/app';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Trophy, BatteryLow, BatteryMedium, BatteryFull, Zap, Battery } from 'lucide-react-native';
+
+const MoodIconRenderer = ({ name, size = 32, color = colors.text }: { name: string, size?: number, color?: string }) => {
+    switch (name) {
+        case 'BatteryLow': return <BatteryLow size={size} color={color} />;
+        case 'BatteryMedium': return <BatteryMedium size={size} color={color} />;
+        case 'BatteryFull': return <BatteryFull size={size} color={color} />;
+        case 'Zap': return <Zap size={size} color={color} />;
+        default: return <Battery size={size} color={color} />;
+    }
+};
 
 interface TaskCompleteModalProps {
     visible: boolean;
@@ -13,6 +25,7 @@ interface TaskCompleteModalProps {
 }
 
 export const TaskCompleteModal = ({ visible, xpEarned, onComplete }: TaskCompleteModalProps) => {
+    const { t } = useTranslation();
     const [selectedMood, setSelectedMood] = useState<MoodLevel | null>(null);
 
     const handleConfirm = () => {
@@ -29,7 +42,12 @@ export const TaskCompleteModal = ({ visible, xpEarned, onComplete }: TaskComplet
             ]}
             onPress={() => setSelectedMood(mood)}
         >
-            <Text style={styles.moodEmoji}>{MOOD_EMOJIS[mood]}</Text>
+            <View style={{ marginBottom: spacing.sm }}>
+                <MoodIconRenderer
+                    name={MOOD_EMOJIS[mood]}
+                    color={selectedMood === mood ? colors.action : colors.muted}
+                />
+            </View>
             <Text style={[
                 styles.moodLabel,
                 selectedMood === mood && styles.moodLabelSelected
@@ -46,19 +64,19 @@ export const TaskCompleteModal = ({ visible, xpEarned, onComplete }: TaskComplet
         >
             <View style={styles.overlay}>
                 <View style={styles.card}>
-                    <Text style={styles.headerEmoji}>🎉</Text>
-                    <Text style={styles.title}>TASK CRUSHED!</Text>
+                    <Trophy size={64} color={colors.action} style={{ marginBottom: spacing.md }} />
+                    <Text style={styles.title}>{t.modals.taskComplete}</Text>
 
                     <View style={styles.xpContainer}>
                         <Text style={styles.xpText}>+{xpEarned} XP</Text>
                     </View>
 
-                    <Text style={styles.question}>How do you feel right now?</Text>
+                    <Text style={styles.question}>{t.mood.question}</Text>
 
                     <View style={styles.moodGrid}>
-                        <MoodButton mood={1} label="Drained" />
-                        <MoodButton mood={3} label="Okay" />
-                        <MoodButton mood={5} label="Energized" />
+                        <MoodButton mood={1} label={t.mood.m1} />
+                        <MoodButton mood={3} label={t.mood.okay} />
+                        <MoodButton mood={5} label={t.mood.energized} />
                     </View>
 
                     <HapticButton
@@ -69,7 +87,7 @@ export const TaskCompleteModal = ({ visible, xpEarned, onComplete }: TaskComplet
                         isDisabled={!selectedMood}
                         style={styles.confirmButton}
                     >
-                        Collect XP & Finish
+                        {t.modals.collectAndFinish}
                     </HapticButton>
                 </View>
             </View>
@@ -154,5 +172,10 @@ const styles = StyleSheet.create({
     },
     confirmButton: {
         marginTop: spacing.sm,
+        shadowColor: colors.action,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 15,
+        elevation: 10,
     },
 });

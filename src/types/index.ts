@@ -34,6 +34,10 @@ export interface Task {
     completedAt?: number;
     moodAtStart: MoodLevel;
     moodAtEnd?: MoodLevel;
+    // Gamification - Time Betting
+    betDurationMinutes?: number;
+    betStartTime?: number;
+    potentialXp?: number;
 }
 
 export interface CompletedTask {
@@ -103,6 +107,8 @@ export enum StorageKeys {
     USER_LEVEL = 'onyx:user_level',
     USER_STREAK = 'onyx:user_streak',
     LAST_ACTIVITY_DATE = 'onyx:last_activity_date',
+    TASK_BACKLOG = 'onyx:task_backlog',
+    USER_LANGUAGE = 'onyx:user_language',
 }
 
 // -------------------- Navigation --------------------

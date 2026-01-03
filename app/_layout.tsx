@@ -13,11 +13,13 @@ import { useSubscriptionStore } from '@/stores/subscription.store';
 import { StorageService } from '@/services/storage.service';
 import { NotificationService } from '@/services/notification.service';
 import { ErrorBoundary } from '@/components';
-import { colors } from '@/constants/theme';
+import { colors, darkColors, lightColors } from '@/constants/theme';
 import '../global.css';
 
 function AppContent() {
     const [isReady, setIsReady] = useState(false);
+    const theme = useUserStore((state) => state.theme);
+    const activeColors = theme === 'light' ? lightColors : darkColors;
 
     const hydrateUser = useUserStore((state) => state.hydrate);
     const hydrateTask = useTaskStore((state) => state.hydrate);
@@ -60,20 +62,20 @@ function AppContent() {
 
     if (!isReady) {
         return (
-            <View style={styles.loading}>
-                <ActivityIndicator size="large" color={colors.action} />
-                <StatusBar style="light" />
+            <View style={[styles.loading, { backgroundColor: activeColors.bg }]}>
+                <ActivityIndicator size="large" color={activeColors.action} />
+                <StatusBar style={theme === 'light' ? 'dark' : 'light'} />
             </View>
         );
     }
 
     return (
         <>
-            <StatusBar style="light" backgroundColor={colors.bg} />
+            <StatusBar style={theme === 'light' ? 'dark' : 'light'} backgroundColor={activeColors.bg} />
             <Stack
                 screenOptions={{
                     headerShown: false,
-                    contentStyle: { backgroundColor: colors.bg },
+                    contentStyle: { backgroundColor: activeColors.bg },
                     animation: 'fade',
                 }}
             />

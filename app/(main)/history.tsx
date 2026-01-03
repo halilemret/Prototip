@@ -11,17 +11,61 @@ import {
     Pressable,
 } from 'react-native';
 import { router } from 'expo-router';
+import {
+    ChevronLeft,
+    ClipboardList,
+    Check,
+    Lock,
+    Lightbulb,
+    BarChart3,
+    TrendingUp,
+    Zap,
+    Battery,
+    BatteryFull,
+    BatteryMedium,
+    BatteryLow,
+    BatteryWarning
+} from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTaskStore } from '@/stores/task.store';
+import { useUserStore } from '@/stores/user.store';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { CompletedTask } from '@/types';
-import { colors, spacing, typography, borderRadius } from '@/constants/theme';
+import { spacing, typography, borderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { MOOD_EMOJIS } from '@/constants/app';
-import { HapticButton } from '@/components';
+import { HapticButton, SkeletonHistory } from '@/components';
+import { useTranslation } from '@/hooks/useTranslation';
+
+const MoodIconRenderer = ({ name, size = 16, color }: { name: string, size?: number, color?: string }) => {
+    const { colors } = useTheme();
+    const iconColor = color || colors.text;
+    switch (name) {
+        case 'BatteryLow': return <BatteryLow size={size} color={iconColor} />;
+        case 'BatteryMedium': return <BatteryMedium size={size} color={iconColor} />;
+        case 'BatteryFull': return <BatteryFull size={size} color={iconColor} />;
+        case 'Zap': return <Zap size={size} color={iconColor} />;
+        default: return <Battery size={size} color={iconColor} />;
+    }
+};
 
 export default function HistoryScreen() {
+    const { colors } = useTheme();
+    const { t, language } = useTranslation();
+    const [isLoading, setIsLoading] = React.useState(true);
     const completedTasks = useTaskStore((state) => state.completedTasks);
+    const isHydrated = useTaskStore((state) => state.isHydrated);
     const { isPremium } = usePremiumFeature();
+
+    const styles = createStyles(colors);
+
+    React.useEffect(() => {
+        if (isHydrated) {
+            // Add a tiny artificial delay for smoothness
+            const timer = setTimeout(() => setIsLoading(false), 600);
+            return () => clearTimeout(timer);
+        }
+    }, [isHydrated]);
 
     const handleBack = () => {
         router.back();
@@ -33,19 +77,19 @@ export default function HistoryScreen() {
         const diff = now.getTime() - date.getTime();
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-        if (days === 0) return 'Today';
-        if (days === 1) return 'Yesterday';
-        if (days < 7) return `${days} days ago`;
+        if (days === 0) return language === 'tr' ? 'Bugün' : 'Today';
+        if (days === 1) return language === 'tr' ? 'Dün' : 'Yesterday';
+        if (days < 7) return language === 'tr' ? `${days} gün önce` : `${days} days ago`;
 
-        return date.toLocaleDateString('en-US', {
+        return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
             month: 'short',
             day: 'numeric',
         });
     };
 
     const formatDuration = (minutes: number): string => {
-        if (minutes < 1) return '<1 min';
-        if (minutes < 60) return `${minutes} min`;
+        if (minutes < 1) return language === 'tr' ? '<1 dk' : '<1 min';
+        if (minutes < 60) return `${minutes} ${language === 'tr' ? 'dk' : 'min'}`;
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
@@ -62,24 +106,30 @@ export default function HistoryScreen() {
 
             <View style={styles.taskMeta}>
                 <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Steps</Text>
+                    <Text style={styles.metaLabel}>{language === 'tr' ? 'Adım' : 'Steps'}</Text>
                     <Text style={styles.metaValue}>
                         {item.completedSteps}/{item.totalSteps}
                     </Text>
                 </View>
 
                 <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Duration</Text>
+                    <Text style={styles.metaLabel}>{language === 'tr' ? 'Süre' : 'Duration'}</Text>
                     <Text style={styles.metaValue}>
                         {formatDuration(item.durationMinutes)}
                     </Text>
                 </View>
 
                 <View style={styles.metaItem}>
-                    <Text style={styles.metaLabel}>Mood</Text>
-                    <Text style={styles.metaValue}>
-                        {MOOD_EMOJIS[item.moodAtStart]} → {item.moodAtEnd ? MOOD_EMOJIS[item.moodAtEnd] : '?'}
-                    </Text>
+                    <Text style={styles.metaLabel}>{language === 'tr' ? 'Mod' : 'Mood'}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <MoodIconRenderer name={MOOD_EMOJIS[item.moodAtStart]} size={14} color={colors.muted} />
+                        <Text style={styles.metaValue}>→</Text>
+                        <MoodIconRenderer
+                            name={item.moodAtEnd ? MOOD_EMOJIS[item.moodAtEnd] : 'Battery'}
+                            size={14}
+                            color={item.moodAtEnd ? colors.text : colors.muted}
+                        />
+                    </View>
                 </View>
             </View>
         </View>
@@ -87,10 +137,10 @@ export default function HistoryScreen() {
 
     const renderEmpty = () => (
         <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📝</Text>
-            <Text style={styles.emptyTitle}>No completed tasks yet</Text>
+            <ClipboardList size={64} color={colors.muted} style={{ marginBottom: spacing.md }} />
+            <Text style={styles.emptyTitle}>{t.history.noTasks}</Text>
             <Text style={styles.emptySubtitle}>
-                Complete your first task to see it here.
+                {t.history.completeFirst}
             </Text>
         </View>
     );
@@ -111,7 +161,7 @@ export default function HistoryScreen() {
             });
 
             days.push({
-                label: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
+                label: d.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'narrow' }),
                 isActive: hasTask,
                 isToday: i === 0
             });
@@ -120,16 +170,41 @@ export default function HistoryScreen() {
     };
 
     const totalMinutes = completedTasks.reduce((acc, t) => acc + t.durationMinutes, 0);
-    const totalHours = (totalMinutes / 60).toFixed(1);
+
+    const formatTotalFocus = (minutes: number): string => {
+        if (minutes < 60) return `${minutes}m`;
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    };
+
+    const getPersonalRank = () => {
+        const { level, streak } = useUserStore.getState();
+        if (streak > 5) return language === 'tr' ? 'Efsane' : 'Legendary';
+        if (level > 10) return language === 'tr' ? 'Usta' : 'Elite';
+        if (completedTasks.length > 20) return language === 'tr' ? 'İstikrarlı' : 'Consistent';
+        return language === 'tr' ? 'Çaylak' : 'Focusing';
+    };
+
+    const getMoodInsight = () => {
+        if (completedTasks.length === 0) return null;
+        const lastMoods = completedTasks.slice(0, 5).map(t => t.moodAtEnd || t.moodAtStart);
+        const avgMood = lastMoods.reduce((a, b) => a + (b as number), 0) / lastMoods.length;
+
+        if (avgMood >= 4) return language === 'tr' ? 'Harika gidiyorsun, modun oldukça yüksek! 🔥' : "You're on fire! Your mood is consistently high. 🔥";
+        if (avgMood <= 2) return language === 'tr' ? 'Enerjin düşük görünüyor, bugün hafif görevler alabilirsin. 🧘' : "Energy seems low. Consider smaller, easier tasks today. 🧘";
+        return language === 'tr' ? 'Dengeli ilerliyorsun. İstikrar en büyük gücün! ✨' : "Keeping it steady. Consistency is your greatest strength! ✨";
+    };
 
     const renderHeader = () => {
         const weeklyActivity = getWeeklyActivity();
+        const insight = getMoodInsight();
 
         return (
             <View>
                 {/* Streak Calendar */}
                 <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>Last 7 Days</Text>
+                    <Text style={styles.sectionTitle}>{t.history.last7Days}</Text>
                     <View style={styles.calendarContainer}>
                         {weeklyActivity.map((day, index) => (
                             <View key={index} style={styles.dayColumn}>
@@ -138,7 +213,7 @@ export default function HistoryScreen() {
                                     day.isActive && styles.dayBubbleActive,
                                     !day.isActive && day.isToday && styles.dayBubbleToday,
                                 ]}>
-                                    {day.isActive && <Text style={styles.checkIcon}>✓</Text>}
+                                    {day.isActive && <Check size={14} color="#FFF" strokeWidth={3} />}
                                 </View>
                                 <Text style={[
                                     styles.dayLabel,
@@ -153,67 +228,85 @@ export default function HistoryScreen() {
                 <View style={styles.statsContainer}>
                     <View style={styles.statItem}>
                         <Text style={styles.statValue}>{completedTasks.length}</Text>
-                        <Text style={styles.statLabel}>Tasks</Text>
+                        <Text style={styles.statLabel}>{t.history.totalTasks}</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{totalHours}h</Text>
-                        <Text style={styles.statLabel}>Focus</Text>
+                        <Text style={styles.statValue}>{formatTotalFocus(totalMinutes)}</Text>
+                        <Text style={styles.statLabel}>{t.history.totalFocus}</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
-                        <Text style={styles.statValue}>{isPremium ? 'Top 10%' : 'Locked'}</Text>
-                        <Text style={styles.statLabel}>Rank</Text>
+                        <Text style={styles.statValue}>{getPersonalRank()}</Text>
+                        <Text style={styles.statLabel}>{t.history.rank}</Text>
                     </View>
                 </View>
 
-                {/* Premium Banner (only if not premium) */}
                 {!isPremium && (
                     <View style={styles.premiumBanner}>
-                        <Text style={styles.premiumTitle}>📊 Unlock Monthly Trends</Text>
-                        <Text style={styles.premiumText}>
-                            See how your mood correlates with task completion.
+                        <View style={styles.row}>
+                            <BarChart3 size={20} color={colors.action} />
+                            <Text style={[styles.premiumTitle, { marginLeft: spacing.sm, marginBottom: 0 }]}>
+                                {language === 'tr' ? 'Aylık Trendleri Aç' : 'Unlock Monthly Trends'}
+                            </Text>
+                        </View>
+                        <Text style={[styles.premiumText, { marginTop: spacing.xs }]}>
+                            {language === 'tr' ? 'Modunuzun görev tamamlama ile ilişkisini görün.' : 'See how your mood correlates with task completion.'}
                         </Text>
                     </View>
                 )}
 
-                {/* Mood Trends (Premium) */}
                 <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>Mood Flow {isPremium ? '' : '🔒'}</Text>
+                    <View style={styles.row}>
+                        <TrendingUp size={16} color={colors.muted} />
+                        <Text style={[styles.sectionTitle, { marginBottom: 0, marginLeft: spacing.xs }]}>
+                            {t.history.moodFlow}
+                        </Text>
+                        {!isPremium && <Lock size={14} color={colors.muted} />}
+                    </View>
+
                     <View style={[styles.chartContainer, !isPremium && styles.chartLocked]}>
                         {completedTasks.slice(0, 7).reverse().map((t, i) => (
                             <View key={t.id} style={styles.chartColumn}>
                                 <View style={[
                                     styles.chartBar,
                                     {
-                                        height: Math.max(20, t.moodAtStart * 15),
-                                        backgroundColor: t.moodAtStart >= 4 ? colors.success :
-                                            t.moodAtStart === 3 ? colors.action :
+                                        height: Math.max(20, (t.moodAtEnd || t.moodAtStart) * 15),
+                                        backgroundColor: (t.moodAtEnd || t.moodAtStart) >= 4 ? colors.success :
+                                            (t.moodAtEnd || t.moodAtStart) === 3 ? colors.action :
                                                 colors.danger
                                     }
                                 ]} />
-                                <Text style={styles.chartLabel}>{MOOD_EMOJIS[t.moodAtStart]}</Text>
+                                <MoodIconRenderer
+                                    name={MOOD_EMOJIS[t.moodAtEnd || t.moodAtStart]}
+                                    size={14}
+                                    color={colors.muted}
+                                />
                             </View>
                         ))}
                         {completedTasks.length === 0 && (
-                            <Text style={styles.chartEmpty}>No data yet</Text>
+                            <Text style={styles.chartEmpty}>{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</Text>
                         )}
 
                         {!isPremium && (
                             <View style={[styles.lockedOverlay, StyleSheet.absoluteFill]}>
                                 <View style={styles.lockIconContainer}>
-                                    <Text style={styles.lockIcon}>🔒</Text>
+                                    <Lock size={20} color={colors.text} />
                                 </View>
-                                <Text style={styles.premiumTitle}>Unlock Trends</Text>
-                                <Text style={styles.premiumText}>See your mood patterns</Text>
+                                <Text style={styles.premiumTitle}>{language === 'tr' ? 'Trendleri Aç' : 'Unlock Trends'}</Text>
+                                <Text style={styles.premiumText}>{language === 'tr' ? 'Mod örüntülerinizi görün' : 'See your mood patterns'}</Text>
                             </View>
                         )}
                     </View>
+                    {isPremium && insight && (
+                        <View style={styles.insightContainer}>
+                            <Lightbulb size={18} color={colors.action} style={{ marginBottom: spacing.xs }} />
+                            <Text style={styles.insightText}>{insight}</Text>
+                        </View>
+                    )}
                 </View>
 
-
-
-                <Text style={styles.sectionTitle}>Recent History ({completedTasks.length})</Text>
+                <Text style={styles.sectionTitle}>{t.history.recentHistory} ({completedTasks.length})</Text>
             </View>
         );
     };
@@ -223,27 +316,33 @@ export default function HistoryScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <Pressable onPress={handleBack} style={styles.backButton}>
-                    <Text style={styles.backIcon}>←</Text>
+                    <ChevronLeft size={28} color={colors.text} />
                 </Pressable>
-                <Text style={styles.screenTitle}>History</Text>
+                <Text style={styles.screenTitle}>{t.history.title}</Text>
                 <View style={styles.placeholder} />
             </View>
 
             {/* Content */}
-            <FlatList
-                data={completedTasks}
-                keyExtractor={(item) => item.id}
-                renderItem={renderItem}
-                ListEmptyComponent={renderEmpty}
-                ListHeaderComponent={renderHeader}
-                contentContainerStyle={styles.list}
-                showsVerticalScrollIndicator={false}
-            />
+            {isLoading ? (
+                <View style={styles.list}>
+                    <SkeletonHistory />
+                </View>
+            ) : (
+                <FlatList
+                    data={completedTasks}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderItem}
+                    ListEmptyComponent={renderEmpty}
+                    ListHeaderComponent={renderHeader}
+                    contentContainerStyle={styles.list}
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.bg,
@@ -367,6 +466,11 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
         textTransform: 'uppercase',
         letterSpacing: 1,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     calendarContainer: {
         flexDirection: 'row',
@@ -498,5 +602,18 @@ const styles = StyleSheet.create({
     },
     lockIcon: {
         fontSize: 20,
+    },
+    insightContainer: {
+        marginTop: spacing.md,
+        padding: spacing.md,
+        backgroundColor: colors.elevated,
+        borderRadius: borderRadius.md,
+        borderLeftWidth: 3,
+        borderLeftColor: colors.action,
+    },
+    insightText: {
+        fontSize: typography.sm,
+        color: colors.textSecondary,
+        lineHeight: 20,
     },
 });

@@ -9,9 +9,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HapticButton, StepPreview } from '@/components';
 import { useTaskStore } from '@/stores/task.store';
 import { useHaptics } from '@/hooks/useHaptics';
-import { colors, spacing, typography } from '@/constants/theme';
+import { spacing, typography, borderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
+import { Sparkles, Zap } from 'lucide-react-native';
 
 export default function FirstBreakdownScreen() {
+    const { colors } = useTheme();
     const haptics = useHaptics();
     const currentTask = useTaskStore((state) => state.currentTask);
 
@@ -53,6 +56,8 @@ export default function FirstBreakdownScreen() {
         router.push('/(onboarding)/personalize');
     };
 
+    const styles = createStyles(colors);
+
     if (!currentTask) {
         return null;
     }
@@ -66,7 +71,7 @@ export default function FirstBreakdownScreen() {
             <View style={styles.content}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.emoji}>✨</Text>
+                    <Sparkles size={48} color={colors.action} style={{ marginBottom: spacing.md }} />
                     <Text style={styles.title}>
                         Here's your breakdown
                     </Text>
@@ -112,7 +117,7 @@ export default function FirstBreakdownScreen() {
                 {/* Candy callout */}
                 {candyStep && (
                     <View style={styles.candyCallout}>
-                        <Text style={styles.candyEmoji}>🍬</Text>
+                        <Zap size={24} color={colors.action} style={{ marginRight: spacing.sm }} />
                         <Text style={styles.candyText}>
                             We'll start with "{candyStep.text}" — the easy win.
                         </Text>
@@ -140,7 +145,7 @@ export default function FirstBreakdownScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.bg,

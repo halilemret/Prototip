@@ -12,18 +12,34 @@ import {
     StepCard,
     SkeletonStepCard,
 } from '@/components';
+import {
+    Settings,
+    Wind,
+    Plus,
+    Zap,
+    History as HistoryIcon
+} from 'lucide-react-native';
 import { useUserStore } from '@/stores/user.store';
 import { useTaskStore } from '@/stores/task.store';
 import { useHaptics } from '@/hooks/useHaptics';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
-import { colors, spacing, typography, borderRadius } from '@/constants/theme';
+import { spacing, typography, borderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
+import { TimeBetModal } from '@/components/Dopamine/TimeBetModal';
+import { ActiveBetTimer } from '@/components/Focus/ActiveBetTimer';
 import { LevelUpModal } from '@/components/Gamification/LevelUpModal';
 import { TaskCompleteModal } from '@/components/Gamification/TaskCompleteModal';
 import { NotificationService } from '@/services/notification.service';
+import { ForgivenessModal } from '@/components/Dopamine/ForgivenessModal';
+import { StorageService } from '@/services/storage.service';
+import { AIService } from '@/services/ai.service';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function FocusViewScreen() {
+    const { colors, theme } = useTheme();
     const haptics = useHaptics();
     const [isCompleting, setIsCompleting] = useState(false);
+    const { t, language } = useTranslation();
 
     // User state
     const currentMood = useUserStore((state) => state.currentMood);
@@ -53,6 +69,8 @@ export default function FocusViewScreen() {
     // Modals state
     const [showLevelUp, setShowLevelUp] = useState(false);
     const [showTaskComplete, setShowTaskComplete] = useState(false);
+    const [showTimeBet, setShowTimeBet] = useState(false);
+    const [showForgiveness, setShowForgiveness] = useState(false);
     const [earnedXp, setEarnedXp] = useState(0);
 
     // Track previous level to detect level up
@@ -65,6 +83,27 @@ export default function FocusViewScreen() {
             setPrevLevel(level);
         }
     }, [level, prevLevel]);
+
+    // Cleanup & Forgiveness logic
+    React.useEffect(() => {
+        if (currentTask) {
+            // Add a small delay to allow navigation transitions to settle
+            const timer = setTimeout(() => {
+                // 1. Check for time bet trigger
+                if (!currentTask.betStartTime && currentTask.microSteps.every(s => !s.isCompleted)) {
+                    setShowTimeBet(true);
+                }
+
+                // 2. Check for "Task Rot" (started > 24h ago)
+                const ageHours = (Date.now() - currentTask.createdAt) / 3600000;
+                if (ageHours > 24) {
+                    setShowForgiveness(true);
+                }
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [currentTask]);
 
     const currentStep = getCurrentStep();
     const progress = getProgress();
@@ -87,7 +126,16 @@ export default function FocusViewScreen() {
             // Delay task complete modal slightly
             setTimeout(() => {
                 haptics.heavy();
-                setEarnedXp(50); // XP value from logic
+
+                // Calculate final XP display (basic 50 + potential bet bonus)
+                // Note: The store handles the actual add logic, this is just for display
+                let bonus = 0;
+                if (currentTask?.betStartTime && currentTask.betDurationMinutes) {
+                    const elapsed = (Date.now() - currentTask.betStartTime) / 60000;
+                    if (elapsed <= currentTask.betDurationMinutes) bonus = 50; // Won bet (total 100)
+                }
+
+                setEarnedXp(50 + bonus);
                 setShowTaskComplete(true);
             }, 500);
         }
@@ -126,6 +174,8 @@ export default function FocusViewScreen() {
         router.push('/(main)/settings');
     };
 
+    const styles = createStyles(colors);
+
     // Empty state - no active task
     if (!currentTask || !currentStep) {
         return (
@@ -134,22 +184,22 @@ export default function FocusViewScreen() {
                     <BatteryIndicator level={currentMood} size="sm" showLabel />
                     <View style={styles.headerRight}>
                         <View style={styles.miniXpContainer}>
-                            <Text style={styles.miniLevelText}>Lvl {level}</Text>
+                            <Text style={styles.miniLevelText}>{language === 'tr' ? 'Seviye' : 'Lvl'} {level}</Text>
                             <View style={styles.miniXpBar}>
                                 <View style={[styles.miniXpFill, { width: `${xpPercent}%` }]} />
                             </View>
                         </View>
                         <Pressable onPress={handleOpenSettings} style={styles.iconButton}>
-                            <Text style={styles.settingsIcon}>⚙️</Text>
+                            <Settings size={22} color={colors.textSecondary} />
                         </Pressable>
                     </View>
                 </View>
 
                 <View style={styles.emptyState}>
-                    <Text style={styles.emptyEmoji}>🧘</Text>
-                    <Text style={styles.emptyTitle}>All clear</Text>
+                    <Wind size={64} color={colors.action} style={styles.emptyIcon} />
+                    <Text style={styles.emptyTitle}>{t.focus.allClear}</Text>
                     <Text style={styles.emptySubtitle}>
-                        No tasks right now.{'\n'}What's next on your mind?
+                        {t.focus.noTasks}
                     </Text>
                 </View>
 
@@ -160,12 +210,12 @@ export default function FocusViewScreen() {
                         fullWidth
                         onPress={handleNewTask}
                     >
-                        + New Task
+                        {t.focus.newBtn}
                     </HapticButton>
 
                     {!isPremium && (
                         <Text style={styles.breakdownsRemaining}>
-                            {remainingBreakdowns} free breakdown{remainingBreakdowns !== 1 ? 's' : ''} remaining today
+                            {remainingBreakdowns} {language === 'tr' ? 'analiz hakkın kaldı' : `free breakdown${remainingBreakdowns !== 1 ? 's' : ''} remaining today`}
                         </Text>
                     )}
 
@@ -175,7 +225,7 @@ export default function FocusViewScreen() {
                         onPress={handleOpenHistory}
                         style={styles.historyButton}
                     >
-                        View History
+                        {t.focus.historyBtn}
                     </HapticButton>
                 </View>
 
@@ -190,7 +240,7 @@ export default function FocusViewScreen() {
                     xpEarned={earnedXp}
                     onComplete={finishTask}
                 />
-            </SafeAreaView>
+            </SafeAreaView >
         );
     }
 
@@ -200,15 +250,19 @@ export default function FocusViewScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <BatteryIndicator level={currentMood} size="sm" showLabel />
+
+                {/* Active Bet Timer (if active) */}
+                <ActiveBetTimer />
+
                 <View style={styles.headerRight}>
                     <View style={styles.miniXpContainer}>
-                        <Text style={styles.miniLevelText}>Lvl {level}</Text>
+                        <Text style={styles.miniLevelText}>{language === 'tr' ? 'Seviye' : 'Lvl'} {level}</Text>
                         <View style={styles.miniXpBar}>
                             <View style={[styles.miniXpFill, { width: `${xpPercent}%` }]} />
                         </View>
                     </View>
                     <Pressable onPress={handleOpenSettings} style={styles.iconButton}>
-                        <Text style={styles.settingsIcon}>⚙️</Text>
+                        <Settings size={22} color={colors.textSecondary} />
                     </Pressable>
                 </View>
             </View>
@@ -250,20 +304,21 @@ export default function FocusViewScreen() {
                     variant="secondary"
                     size="md"
                     onPress={handleNewTask}
-                    leftIcon={<Text>➕</Text>}
+                    leftIcon={<Plus size={18} color={colors.text} />}
                 >
-                    New Task
+                    {language === 'tr' ? 'Yeni Görev' : 'New Task'}
                 </HapticButton>
 
                 <HapticButton
                     variant="secondary"
                     size="md"
                     onPress={handleCandy}
-                    leftIcon={<Text>🍬</Text>}
+                    leftIcon={<Zap size={18} color={colors.action} />}
                 >
-                    Easy Win
+                    {t.focus.easyWin}
                 </HapticButton>
             </View>
+
 
             {/* Modals */}
             <LevelUpModal
@@ -277,11 +332,22 @@ export default function FocusViewScreen() {
                 xpEarned={earnedXp}
                 onComplete={finishTask}
             />
+
+            <TimeBetModal
+                visible={showTimeBet}
+                onClose={() => setShowTimeBet(false)}
+            />
+
+            <ForgivenessModal
+                visible={showForgiveness}
+                taskTitle={currentTask?.originalText || ''}
+                onClose={() => setShowForgiveness(false)}
+            />
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.bg,
@@ -340,8 +406,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    emptyEmoji: {
-        fontSize: 64,
+    emptyIcon: {
         marginBottom: spacing.lg,
     },
     emptyTitle: {
@@ -393,4 +458,10 @@ const styles = StyleSheet.create({
         backgroundColor: colors.action,
         borderRadius: 2,
     },
+    floatingContainer: {
+        position: 'absolute',
+        bottom: 150,
+        right: 24,
+    },
 });
+

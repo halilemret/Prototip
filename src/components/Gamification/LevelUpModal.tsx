@@ -5,6 +5,8 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import { HapticButton } from '../HapticButton';
 import { colors, spacing, typography, borderRadius } from '@/constants/theme';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useTranslation } from '@/hooks/useTranslation';
+import { Sparkles } from 'lucide-react-native';
 
 interface LevelUpModalProps {
     visible: boolean;
@@ -13,6 +15,7 @@ interface LevelUpModalProps {
 }
 
 export const LevelUpModal = ({ visible, level, onClose }: LevelUpModalProps) => {
+    const { t } = useTranslation();
     const haptics = useHaptics();
     const cannonRef = useRef<ConfettiCannon>(null);
 
@@ -35,16 +38,16 @@ export const LevelUpModal = ({ visible, level, onClose }: LevelUpModalProps) => 
         >
             <View style={styles.overlay}>
                 <View style={styles.card}>
-                    <Text style={styles.emoji}>🆙</Text>
-                    <Text style={styles.title}>LEVEL UP!</Text>
-                    <Text style={styles.subtitle}>You are now</Text>
+                    <Sparkles size={64} color={colors.action} style={{ marginBottom: spacing.md }} />
+                    <Text style={styles.title}>{t.modals.levelUp}</Text>
+                    <Text style={styles.subtitle}>{t.modals.reached}</Text>
 
                     <View style={styles.levelBadge}>
                         <Text style={styles.levelText}>{level}</Text>
                     </View>
 
                     <Text style={styles.description}>
-                        Keep executing tasks to become a Grandmaster.
+                        {t.modals.keepGoing}
                     </Text>
 
                     <HapticButton
@@ -54,7 +57,7 @@ export const LevelUpModal = ({ visible, level, onClose }: LevelUpModalProps) => 
                         onPress={onClose}
                         style={styles.button}
                     >
-                        Continue
+                        {t.common.continue}
                     </HapticButton>
                 </View>
 

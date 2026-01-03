@@ -29,11 +29,11 @@ export const MOOD_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
 };
 
 export const MOOD_EMOJIS: Record<1 | 2 | 3 | 4 | 5, string> = {
-    1: '🪫',
-    2: '🔋',
-    3: '🔋',
-    4: '🔋',
-    5: '⚡',
+    1: 'BatteryLow',
+    2: 'BatteryMedium',
+    3: 'BatteryFull',
+    4: 'BatteryFull',
+    5: 'Zap',
 };
 
 // Premium features list
@@ -42,24 +42,18 @@ export const PREMIUM_FEATURES = [
         id: 'unlimited_breakdowns',
         name: 'Unlimited Breakdowns',
         description: 'No daily limits on AI task decomposition',
-        icon: '♾️',
+        icon: 'Infinity',
     },
     {
         id: 'mood_analytics',
         name: 'Mood Analytics',
         description: 'Track your productivity patterns over time',
-        icon: '📊',
-    },
-    {
-        id: 'voice_coach',
-        name: 'Voice Motivation',
-        description: 'Audio encouragement when you need it',
-        icon: '🎙️',
+        icon: 'BarChart3',
     },
     {
         id: 'panic_mode',
         name: 'Panic Mode',
         description: 'Emergency task simplification',
-        icon: '🚨',
+        icon: 'AlertOctagon',
     },
 ] as const;

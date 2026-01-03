@@ -10,6 +10,7 @@ import { useUserStore } from '@/stores/user.store';
 interface TaskState {
     // State
     currentTask: Task | null;
+    backlog: Task[];
     completedTasks: CompletedTask[];
     isLoading: boolean;
     isHydrated: boolean;
@@ -23,11 +24,13 @@ interface TaskState {
     hydrate: () => void;
     createTaskFromBreakdown: (breakdown: MagicBreakdownResponse, moodAtStart: MoodLevel) => Task;
     setCurrentTask: (task: Task | null) => void;
+    placeBet: (minutes: number) => void;
     completeCurrentStep: () => void;
     skipCurrentStep: () => void;
     jumpToCandy: () => void;
     completeTask: (moodAtEnd?: MoodLevel) => CompletedTask | null;
     abandonTask: () => void;
+    forgiveTask: () => void;
     setLoading: (loading: boolean) => void;
 }
 
@@ -37,8 +40,8 @@ const generateTaskId = (): string => {
 };
 
 export const useTaskStore = create<TaskState>((set, get) => ({
-    // Initial state
     currentTask: null,
+    backlog: [],
     completedTasks: [],
     isLoading: false,
     isHydrated: false,
@@ -74,10 +77,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     hydrate: () => {
         const currentTask = StorageService.getCurrentTask();
         const completedTasks = StorageService.getCompletedTasks();
+        const backlog = StorageService.getBacklog();
 
         set({
             currentTask,
             completedTasks,
+            backlog,
             isHydrated: true,
         });
     },
@@ -99,10 +104,6 @@ export const useTaskStore = create<TaskState>((set, get) => ({
             moodAtStart,
         };
 
-        // Optionally start with candy (easiest step)
-        // Uncomment if "Eat the Candy" mode should be default:
-        // task.currentStepIndex = breakdown.candyIndex;
-
         StorageService.setCurrentTask(task);
         set({ currentTask: task });
 
@@ -113,6 +114,22 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     setCurrentTask: (task: Task | null) => {
         StorageService.setCurrentTask(task);
         set({ currentTask: task });
+    },
+
+    // Place a time bet
+    placeBet: (minutes: number) => {
+        const { currentTask } = get();
+        if (!currentTask) return;
+
+        const updatedTask: Task = {
+            ...currentTask,
+            betDurationMinutes: minutes,
+            betStartTime: Date.now(),
+            potentialXp: 100, // Base pot value
+        };
+
+        StorageService.setCurrentTask(updatedTask);
+        set({ currentTask: updatedTask });
     },
 
     // Complete current step and move to next
@@ -234,7 +251,24 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         });
 
         // Gamification: Award XP for task completion
-        useUserStore.getState().addXp(50);
+        // Check for bet
+        let xpAwarded = 50; // Base XP
+
+        if (currentTask.betDurationMinutes && currentTask.betStartTime) {
+            const timeElapsed = (Date.now() - currentTask.betStartTime) / 60000;
+            if (timeElapsed <= currentTask.betDurationMinutes) {
+                // WON BET: 2x XP
+                xpAwarded = 100;
+            } else {
+                // LOST BET: 0 XP
+                xpAwarded = 0;
+            }
+        }
+
+        if (xpAwarded > 0) {
+            useUserStore.getState().addXp(xpAwarded);
+        }
+
         useUserStore.getState().updateStreak();
 
         return completedTask;
@@ -244,6 +278,21 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     abandonTask: () => {
         StorageService.setCurrentTask(null);
         set({ currentTask: null });
+    },
+
+    // The Forgiveness Protocol: Archive current task to backlog
+    forgiveTask: () => {
+        const { currentTask, backlog } = get();
+        if (!currentTask) return;
+
+        const updatedBacklog = [currentTask, ...backlog].slice(0, 50);
+        StorageService.setBacklog(updatedBacklog);
+        StorageService.setCurrentTask(null);
+
+        set({
+            currentTask: null,
+            backlog: updatedBacklog,
+        });
     },
 
     // Set loading state

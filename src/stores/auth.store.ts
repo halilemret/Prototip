@@ -15,7 +15,7 @@ interface AuthState {
     initialized: boolean;
 
     initialize: () => Promise<void>;
-    signIn: (email: string, password: string) => Promise<{ error: any }>;
+    signIn: (email: string, password: string) => Promise<{ error: any; data: any }>;
     signUp: (email: string, password: string) => Promise<{ error: any; data: any }>;
     signOut: () => Promise<void>;
 }
@@ -28,10 +28,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     initialize: async () => {
         try {
-            // Check current session
-            const { data: { session } } = await supabase.auth.getSession();
+            // Check current session safely
+            const { data: { session }, error } = await supabase.auth.getSession();
 
-            if (session?.user) {
+            if (error) {
+                console.warn('[AuthStore] Session error on init:', error.message);
+                // If token is invalid, clear it
+                if (error.message.includes('Refresh Token') || error.message.includes('invalid_grant')) {
+                    await supabase.auth.signOut();
+                    set({ session: null, user: null });
+                }
+            } else if (session?.user) {
                 set({ session, user: session.user });
                 // Identify user in RevenueCat & update subscription
                 const info = await RevenueCatService.setUserId(session.user.id);
@@ -41,7 +48,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
 
             // Listen for changes
-            supabase.auth.onAuthStateChange(async (_event, session) => {
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log('[AuthStore] Auth event:', event);
+
                 set({ session, user: session?.user ?? null });
 
                 if (session?.user) {
@@ -49,6 +58,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     if (info) {
                         useSubscriptionStore.getState().setCustomerInfo(info);
                     }
+                } else if (event === 'SIGNED_OUT') {
+                    // Explicitly handle sign out cleanup if needed
+                    await RevenueCatService.logOut();
                 }
             });
 
@@ -79,7 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 }
             }
 
-            return { error };
+            return { data, error };
         } finally {
             set({ isLoading: false });
         }

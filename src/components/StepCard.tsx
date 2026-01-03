@@ -1,12 +1,9 @@
-// ============================================
-// ONYX - Step Card Component
-// ============================================
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MicroStep } from '@/types';
 import { colors, spacing, borderRadius, shadows, typography } from '@/constants/theme';
 import HapticButton from './HapticButton';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface StepCardProps {
     step: MicroStep;
@@ -25,6 +22,8 @@ export const StepCard: React.FC<StepCardProps> = ({
     onSkip,
     isCompleting = false,
 }) => {
+    const { t } = useTranslation();
+
     const getDifficultyIndicator = () => {
         if (step.isCandy) return '🍬';
 
@@ -41,7 +40,7 @@ export const StepCard: React.FC<StepCardProps> = ({
             {/* Progress indicator */}
             <View style={styles.progressRow}>
                 <Text style={styles.progressText}>
-                    STEP {stepNumber} OF {totalSteps}
+                    {t.focus.stepLabel} {stepNumber} {t.focus.ofLabel} {totalSteps}
                 </Text>
                 <Text style={styles.difficultyIcon}>
                     {getDifficultyIndicator()}
@@ -58,7 +57,7 @@ export const StepCard: React.FC<StepCardProps> = ({
             {/* Candy badge */}
             {step.isCandy && (
                 <View style={styles.candyBadge}>
-                    <Text style={styles.candyText}>✨ Easy Win</Text>
+                    <Text style={styles.candyText}>{t.focus.easyWinBadge}</Text>
                 </View>
             )}
 
@@ -72,7 +71,7 @@ export const StepCard: React.FC<StepCardProps> = ({
                     onPress={onComplete}
                     isLoading={isCompleting}
                 >
-                    ✓ Done
+                    {t.focus.doneAction}
                 </HapticButton>
 
                 <HapticButton
@@ -82,7 +81,7 @@ export const StepCard: React.FC<StepCardProps> = ({
                     onPress={onSkip}
                     style={styles.skipButton}
                 >
-                    Skip for now →
+                    {t.focus.skipAction}
                 </HapticButton>
             </View>
         </View>

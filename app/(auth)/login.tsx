@@ -19,8 +19,11 @@ import { HapticButton } from '@/components';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUserStore } from '@/stores/user.store';
 import { colors, spacing, typography, borderRadius } from '@/constants/theme';
+import { useTranslation } from '@/hooks/useTranslation';
+import { ShieldCheck, Mail, Lock } from 'lucide-react-native';
 
 export default function LoginScreen() {
+    const { t } = useTranslation();
     const [mode, setMode] = useState<'signin' | 'signup'>('signin');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -32,7 +35,7 @@ export default function LoginScreen() {
 
     const handleSubmit = async () => {
         if (!email.includes('@') || password.length < 6) {
-            Alert.alert('Invalid Input', 'Please check your email and password (min 6 chars).');
+            Alert.alert(t.common.error, mode === 'signup' ? 'Kayıt bilgileri geçersiz (min 6 karakter)' : 'Email veya şifre hatalı');
             return;
         }
 
@@ -44,16 +47,15 @@ export default function LoginScreen() {
         }
 
         if (result.error) {
-            Alert.alert('Error', result.error.message);
+            Alert.alert(t.common.error, result.error.message);
         } else {
             if (mode === 'signup') {
-                // Check if email confirmation is required
-                const isConfirmed = result.data?.session; // If session exists, auto-confirmed
+                const isConfirmed = result.data?.session;
                 if (!isConfirmed) {
                     Alert.alert(
-                        'Account Created',
-                        'Please verify your email address to continue.',
-                        [{ text: 'OK', onPress: () => setMode('signin') }]
+                        t.auth.titleSignup,
+                        'Lütfen e-posta adresinizi doğrulayın.',
+                        [{ text: t.common.done, onPress: () => setMode('signin') }]
                     );
                     return;
                 }
@@ -65,11 +67,6 @@ export default function LoginScreen() {
         }
     };
 
-    const handleSkip = () => {
-        completeOnboarding();
-        router.replace('/(main)');
-    };
-
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView
@@ -78,19 +75,19 @@ export default function LoginScreen() {
             >
                 <View style={styles.header}>
                     <Text style={styles.title}>
-                        {mode === 'signin' ? 'Welcome back' : 'Create Account'}
+                        {mode === 'signin' ? t.auth.titleSignin : t.auth.titleSignup}
                     </Text>
                     <Text style={styles.subtitle}>
                         {mode === 'signin'
-                            ? 'Sign in to access your pro features and history.'
-                            : 'Join Onyx to start your journey.'}
+                            ? t.auth.subtitleSignin
+                            : t.auth.subtitleSignup}
                     </Text>
                 </View>
 
                 <View style={styles.form}>
                     <TextInput
                         style={styles.input}
-                        placeholder="Email"
+                        placeholder={t.auth.emailPlaceholder}
                         placeholderTextColor={colors.muted}
                         value={email}
                         onChangeText={setEmail}
@@ -101,7 +98,7 @@ export default function LoginScreen() {
 
                     <TextInput
                         style={styles.input}
-                        placeholder="Password"
+                        placeholder={t.auth.passwordPlaceholder}
                         placeholderTextColor={colors.muted}
                         value={password}
                         onChangeText={setPassword}
@@ -116,7 +113,7 @@ export default function LoginScreen() {
                         isLoading={isLoading}
                         style={styles.button}
                     >
-                        {mode === 'signin' ? 'Sign In' : 'Create Account'}
+                        {mode === 'signin' ? t.auth.signinBtn : t.auth.signupBtn}
                     </HapticButton>
 
                     <Pressable
@@ -125,20 +122,20 @@ export default function LoginScreen() {
                     >
                         <Text style={styles.toggleText}>
                             {mode === 'signin'
-                                ? "Don't have an account? Sign Up"
-                                : "Already have an account? Sign In"}
+                                ? t.auth.toggleSignin
+                                : t.auth.toggleSignup}
                         </Text>
                     </Pressable>
                 </View>
 
                 <View style={styles.footer}>
-                    <HapticButton
-                        variant="secondary"
-                        size="md"
-                        onPress={handleSkip}
-                    >
-                        Skip for now
-                    </HapticButton>
+                    <View style={styles.securityRow}>
+                        <ShieldCheck size={16} color={colors.success} />
+                        <Text style={styles.securityNote}>{t.auth.securityNote}</Text>
+                    </View>
+                    <Pressable style={styles.privacyButton}>
+                        <Text style={styles.privacyText}>{t.auth.privacyPolicy}</Text>
+                    </Pressable>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -156,7 +153,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     header: {
-        marginBottom: spacing['2xl'],
+        marginBottom: spacing.xxl,
     },
     title: {
         fontSize: typography['3xl'],
@@ -194,7 +191,27 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     footer: {
-        marginTop: spacing['3xl'],
+        marginTop: spacing.xxl,
         alignItems: 'center',
+        gap: spacing.sm,
+    },
+    securityRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: 4,
+    },
+    securityNote: {
+        fontSize: typography.xs,
+        color: colors.muted,
+    },
+    privacyButton: {
+        padding: spacing.xs,
+    },
+    privacyText: {
+        fontSize: typography.xs,
+        color: colors.action,
+        fontWeight: '600',
+        textDecorationLine: 'underline',
     },
 });

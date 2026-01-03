@@ -12,21 +12,29 @@ import {
     Platform,
     Alert,
     Pressable,
+    ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
+import { Brain, Rocket, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { HapticButton, SkeletonStepCard } from '@/components';
+import { HapticButton, SkeletonStepCard, ErrorView } from '@/components';
 import { useUserStore } from '@/stores/user.store';
 import { useTaskStore } from '@/stores/task.store';
 import { useSubscriptionStore } from '@/stores/subscription.store';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { AIService } from '@/services/ai.service';
-import { colors, spacing, typography, borderRadius } from '@/constants/theme';
+import { StorageService } from '@/services/storage.service';
+import { useTranslation } from '@/hooks/useTranslation';
+import { spacing, typography, borderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import { MAX_TASK_LENGTH } from '@/constants/app';
 
 export default function NewTaskModal() {
+    const { colors } = useTheme();
+    const { t, language } = useTranslation();
     const [task, setTask] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<{ code: string; message: string } | null>(null);
 
     const currentMood = useUserStore((state) => state.currentMood);
     const incrementBreakdownCount = useUserStore((state) => state.incrementBreakdownCount);
@@ -38,6 +46,8 @@ export default function NewTaskModal() {
 
     const shouldShowPaywall = useSubscriptionStore((state) => state.shouldShowPaywall);
     const { isPremium, remainingBreakdowns, canUseBreakdown, showPaywall } = usePremiumFeature();
+
+    const styles = createStyles(colors);
 
     const handleClose = () => {
         router.back();
@@ -85,6 +95,7 @@ export default function NewTaskModal() {
 
     const startBreakdown = async () => {
         setIsLoading(true);
+        setError(null);
 
         try {
             const result = await AIService.magicBreakdown({
@@ -106,10 +117,15 @@ export default function NewTaskModal() {
                 // Close modal and go to focus view
                 router.back();
             } else {
-                Alert.alert('Error', result.error.message);
+                setError(result.error);
+                // Log for debugging
+                console.warn('[NewTask] Breakdown failed:', result.error);
             }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to break down task. Please try again.');
+        } catch (err) {
+            setError({
+                code: 'UNKNOWN',
+                message: 'Something unexpected happened. Please try again.'
+            });
         } finally {
             setIsLoading(false);
         }
@@ -126,66 +142,81 @@ export default function NewTaskModal() {
             >
                 {/* Header */}
                 <View style={styles.header}>
-                    <Pressable onPress={handleClose} style={styles.closeButton}>
-                        <Text style={styles.closeIcon}>✕</Text>
-                    </Pressable>
-                    <Text style={styles.title}>Brain Dump 🧠</Text>
+                    <HapticButton variant="ghost" size="sm" onPress={() => router.back()}>
+                        <X size={20} color={colors.muted} />
+                    </HapticButton>
+                    <Text style={styles.title}>{t.newTask.title.replace(' 🧠', '')}</Text>
                     <View style={styles.placeholder} />
                 </View>
 
                 {/* Content */}
-                <View style={styles.content}>
-                    {isLoading ? (
-                        <View style={styles.loadingContainer}>
-                            <Text style={styles.loadingText}>Analyzing your thoughts...</Text>
-                            <Text style={styles.loadingSubText}>Extracting the most critical task just for you.</Text>
-                            <SkeletonStepCard />
-                        </View>
-                    ) : (
-                        <>
-                            <Text style={styles.prompt}>
-                                Vomit your thoughts here.{"\n"}
-                                <Text style={styles.promptSub}>Don't worry about order. Just get it out.</Text>
-                            </Text>
-
-                            <TextInput
-                                style={[styles.input, isOverLimit && styles.inputError]}
-                                placeholder="e.g., I need to pay rent, buy cat food, email my boss about the report, and maybe clean the kitchen because it's gross..."
-                                placeholderTextColor={colors.muted}
-                                value={task}
-                                onChangeText={setTask}
-                                multiline
-                                maxLength={MAX_TASK_LENGTH + 20}
-                                autoFocus
-                            />
-
-                            <View style={styles.inputMeta}>
-                                <Text style={[styles.charCount, isOverLimit && styles.charCountError]}>
-                                    {charCount}/{MAX_TASK_LENGTH}
-                                </Text>
-
-                                {!isPremium && (
-                                    <Text style={styles.remainingText}>
-                                        {remainingBreakdowns} analysis left today
-                                    </Text>
-                                )}
+                <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+                    <View style={styles.content}>
+                        {isLoading ? (
+                            <View style={styles.loadingContainer}>
+                                <Text style={styles.loadingText}>{t.newTask.analyzing}</Text>
+                                <Text style={styles.loadingSubText}>{t.newTask.extracting}</Text>
+                                <SkeletonStepCard />
                             </View>
-                        </>
-                    )}
-                </View>
+                        ) : error ? (
+                            <ErrorView
+                                title={error.code === 'RATE_LIMIT' ? (language === 'tr' ? "Yapay zeka dinleniyor" : "AI is catching its breath") : (language === 'tr' ? "Analiz Başarısız" : "Analysis Failed")}
+                                message={error.message}
+                                onRetry={startBreakdown}
+                                retryLabel={t.common.retry}
+                            />
+                        ) : (
+                            <>
+                                <View style={styles.promptHeader}>
+                                    <Brain size={24} color={colors.action} style={{ marginBottom: spacing.sm }} />
+                                    <Text style={styles.prompt}>
+                                        {t.newTask.prompt}{"\n"}
+                                        <Text style={styles.promptSub}>{t.newTask.promptSub}</Text>
+                                    </Text>
+                                </View>
+
+                                <TextInput
+                                    style={[styles.input, isOverLimit && styles.inputError]}
+                                    placeholder={t.newTask.placeholder}
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={task}
+                                    onChangeText={(text) => {
+                                        setTask(text);
+                                        if (error) setError(null);
+                                    }}
+                                    multiline
+                                    maxLength={MAX_TASK_LENGTH + 20}
+                                    autoFocus
+                                />
+
+                                <View style={styles.inputMeta}>
+                                    <Text style={[styles.charCount, isOverLimit && styles.charCountError]}>
+                                        {charCount}/{MAX_TASK_LENGTH}
+                                    </Text>
+
+                                    {!isPremium && (
+                                        <Text style={styles.remainingText}>
+                                            {remainingBreakdowns} {language === 'tr' ? 'analiz hakkın kaldı' : 'analysis left today'}
+                                        </Text>
+                                    )}
+                                </View>
+                            </>
+                        )}
+                    </View>
+                </ScrollView>
 
                 {/* Footer */}
-                {!isLoading && (
+                {!isLoading && !error && (
                     <View style={styles.footer}>
                         <HapticButton
                             variant={canUseBreakdown ? "primary" : "secondary"}
                             size="lg"
                             fullWidth
-                            hapticType="heavy"
                             onPress={handleBreakdown}
-                            isDisabled={!task.trim() || isOverLimit}
+                            disabled={!task.trim() || isOverLimit}
+                            leftIcon={canUseBreakdown ? <Rocket size={20} color={colors.bg} /> : undefined}
                         >
-                            {canUseBreakdown ? 'Analyze & Create Action 🚀' : 'Unlock unlimited ⚡'}
+                            {canUseBreakdown ? t.newTask.analyze.replace(' 🚀', '') : t.newTask.unlock}
                         </HapticButton>
                     </View>
                 )}
@@ -194,7 +225,7 @@ export default function NewTaskModal() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.bg,
@@ -211,11 +242,8 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
     },
-    closeButton: {
-        padding: spacing.sm,
-    },
-    closeIcon: {
-        fontSize: 20,
+    cancelText: {
+        fontSize: typography.base,
         color: colors.muted,
     },
     title: {
@@ -236,6 +264,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.text,
         marginBottom: spacing.lg,
+        flex: 1,
+    },
+    promptHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: spacing.md,
+        marginBottom: spacing.md,
     },
     promptSub: {
         fontSize: typography.base,
@@ -293,5 +328,8 @@ const styles = StyleSheet.create({
     footer: {
         paddingHorizontal: spacing.xl,
         paddingBottom: spacing.xl,
+    },
+    scrollContent: {
+        flexGrow: 1,
     },
 });

@@ -84,6 +84,16 @@ export const StorageService = {
         }
     },
 
+    // -------------------- Task Backlog --------------------
+
+    getBacklog: (): Task[] => {
+        return getItemSync<Task[]>(StorageKeys.TASK_BACKLOG) ?? [];
+    },
+
+    setBacklog: (backlog: Task[]): void => {
+        setItemSync(StorageKeys.TASK_BACKLOG, backlog);
+    },
+
     // -------------------- Completed Tasks --------------------
 
     getCompletedTasks: (): CompletedTask[] => {
@@ -139,25 +149,8 @@ export const StorageService = {
         const entry: MoodEntry = {
             level: mood,
             timestamp: Date.now(),
-            note: '' // Added missing required property if needed, though interface might make it optional. Assuming MoodEntry structure.
         };
-        // Re-checking MoodEntry type from usage in other files if needed.
-        // Basic fix for now is just what was there + type fix.
-        // Actually, looking at Step 1088, previous code was:
-        /*
-        const entry: MoodEntry = {
-            level: mood,
-            timestamp: Date.now(),
-        };
-        */
-        // I will stick to exact previous content but with the type fix in hydrate.
-
-        // Revert the `note` addition to match previous exactly.
-        const entryClean: MoodEntry = {
-            level: mood,
-            timestamp: Date.now(),
-        };
-        StorageService.addMoodEntry(entryClean);
+        StorageService.addMoodEntry(entry);
     },
 
     getMoodHistory: (): MoodEntry[] => {
@@ -212,6 +205,14 @@ export const StorageService = {
 
     setLastActivityDate: (date: string): void => {
         setItemSync(StorageKeys.LAST_ACTIVITY_DATE, date);
+    },
+
+    getLanguage: (): 'en' | 'tr' => {
+        return getItemSync<'en' | 'tr'>(StorageKeys.USER_LANGUAGE) ?? 'en';
+    },
+
+    setLanguage: (lang: 'en' | 'tr'): void => {
+        setItemSync(StorageKeys.USER_LANGUAGE, lang);
     },
 
     // -------------------- Utils --------------------

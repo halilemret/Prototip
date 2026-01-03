@@ -8,6 +8,7 @@ import { MoodLevel } from '@/types';
 import { colors, spacing, borderRadius } from '@/constants/theme';
 import { MOOD_LABELS } from '@/constants/app';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useTheme } from '@/hooks/useTheme';
 
 interface BatteryIndicatorProps {
     level: MoodLevel;
@@ -24,6 +25,7 @@ interface BatteryCellProps {
     size: 'sm' | 'md' | 'lg';
     onPress?: () => void;
     interactive: boolean;
+    styles: any;
 }
 
 const BatteryCell: React.FC<BatteryCellProps> = ({
@@ -33,12 +35,14 @@ const BatteryCell: React.FC<BatteryCellProps> = ({
     size,
     onPress,
     interactive,
+    styles,
 }) => {
     const haptics = useHaptics();
 
     const getColor = (): string => {
+        const { colors } = useTheme();
         if (!filled) return colors.border;
-        return colors.battery[level];
+        return colors.battery[level as MoodLevel];
     };
 
     const cellSizes = {
@@ -83,7 +87,9 @@ export const BatteryIndicator: React.FC<BatteryIndicatorProps> = ({
     showLabel = false,
     interactive = false,
 }) => {
+    const { colors } = useTheme();
     const cells: MoodLevel[] = [1, 2, 3, 4, 5];
+    const styles = createStyles(colors);
 
     return (
         <View style={styles.container}>
@@ -97,6 +103,7 @@ export const BatteryIndicator: React.FC<BatteryIndicatorProps> = ({
                         size={size}
                         onPress={() => onPress?.(cellLevel)}
                         interactive={interactive}
+                        styles={styles}
                     />
                 ))}
             </View>
@@ -121,8 +128,10 @@ export const BatterySelector: React.FC<BatterySelectorProps> = ({
     value,
     onChange,
 }) => {
+    const { colors } = useTheme();
     const haptics = useHaptics();
     const levels: MoodLevel[] = [1, 2, 3, 4, 5];
+    const styles = createStyles(colors);
 
     const handleSelect = (level: MoodLevel) => {
         haptics.medium();
@@ -134,18 +143,18 @@ export const BatterySelector: React.FC<BatterySelectorProps> = ({
             {levels.map((level) => (
                 <Pressable
                     key={level}
-                    onPress={() => handleSelect(level)}
+                    onPress={() => handleSelect(level as MoodLevel)}
                     style={[
                         styles.selectorCell,
                         value === level && styles.selectorCellSelected,
-                        { borderColor: value === level ? colors.battery[level] : colors.border },
+                        { borderColor: value === level ? colors.battery[level as MoodLevel] : colors.border },
                     ]}
                 >
                     <View
                         style={[
                             styles.selectorInner,
                             {
-                                backgroundColor: value >= level ? colors.battery[level] : colors.surface,
+                                backgroundColor: value >= level ? colors.battery[level as MoodLevel] : colors.surface,
                                 opacity: value >= level ? 1 : 0.3,
                             },
                         ]}
@@ -153,7 +162,7 @@ export const BatterySelector: React.FC<BatterySelectorProps> = ({
                     <Text
                         style={[
                             styles.selectorLabel,
-                            { color: value === level ? colors.battery[level] : colors.muted },
+                            { color: value === level ? colors.battery[level as MoodLevel] : colors.muted },
                         ]}
                     >
                         {level}
@@ -164,7 +173,7 @@ export const BatterySelector: React.FC<BatterySelectorProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',

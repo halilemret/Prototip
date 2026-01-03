@@ -12,26 +12,52 @@ import { useUserStore } from '@/stores/user.store';
 import { useHaptics } from '@/hooks/useHaptics';
 import { storage } from '@/services/storage.service';
 import { colors, spacing, typography, borderRadius } from '@/constants/theme';
+import {
+    Rocket,
+    Target,
+    CheckCircle2,
+    AlertCircle,
+    Zap,
+    Wind,
+    RefreshCcw,
+    Heart,
+    Dumbbell
+} from 'lucide-react-native';
 
 type PreferenceOption = {
     id: string;
-    emoji: string;
+    iconName: string;
     label: string;
 };
 
 const CHALLENGE_OPTIONS: PreferenceOption[] = [
-    { id: 'starting', emoji: '🚀', label: 'Starting tasks' },
-    { id: 'focus', emoji: '🎯', label: 'Staying focused' },
-    { id: 'finishing', emoji: '🏁', label: 'Finishing tasks' },
-    { id: 'overwhelm', emoji: '🌊', label: 'Feeling overwhelmed' },
+    { id: 'starting', iconName: 'Rocket', label: 'Starting tasks' },
+    { id: 'focus', iconName: 'Target', label: 'Staying focused' },
+    { id: 'finishing', iconName: 'CheckCircle2', label: 'Finishing tasks' },
+    { id: 'overwhelm', iconName: 'AlertCircle', label: 'Feeling overwhelmed' },
 ];
 
 const GOAL_OPTIONS: PreferenceOption[] = [
-    { id: 'productivity', emoji: '⚡', label: 'Be more productive' },
-    { id: 'anxiety', emoji: '🧘', label: 'Reduce task anxiety' },
-    { id: 'habits', emoji: '🔄', label: 'Build better habits' },
-    { id: 'peace', emoji: '☮️', label: 'Find peace of mind' },
+    { id: 'productivity', iconName: 'Zap', label: 'Be more productive' },
+    { id: 'anxiety', iconName: 'Wind', label: 'Reduce task anxiety' },
+    { id: 'habits', iconName: 'RefreshCcw', label: 'Build better habits' },
+    { id: 'peace', iconName: 'Heart', label: 'Find peace of mind' },
 ];
+
+const IconRenderer = ({ name, color }: { name: string, color: string }) => {
+    const size = 20;
+    switch (name) {
+        case 'Rocket': return <Rocket size={size} color={color} />;
+        case 'Target': return <Target size={size} color={color} />;
+        case 'CheckCircle2': return <CheckCircle2 size={size} color={color} />;
+        case 'AlertCircle': return <AlertCircle size={size} color={color} />;
+        case 'Zap': return <Zap size={size} color={color} />;
+        case 'Wind': return <Wind size={size} color={color} />;
+        case 'RefreshCcw': return <RefreshCcw size={size} color={color} />;
+        case 'Heart': return <Heart size={size} color={color} />;
+        default: return null;
+    }
+};
 
 export default function PersonalizeScreen() {
     const haptics = useHaptics();
@@ -81,7 +107,12 @@ export default function PersonalizeScreen() {
             ]}
             onPress={onPress}
         >
-            <Text style={styles.optionEmoji}>{option.emoji}</Text>
+            <View style={styles.optionIcon}>
+                <IconRenderer
+                    name={option.iconName}
+                    color={isSelected ? colors.action : colors.muted}
+                />
+            </View>
             <Text style={[
                 styles.optionLabel,
                 isSelected && styles.optionLabelSelected,
@@ -161,8 +192,9 @@ export default function PersonalizeScreen() {
                         hapticType="heavy"
                         onPress={handleContinue}
                         isDisabled={!canContinue}
+                        leftIcon={<Dumbbell size={20} color={colors.bg} />}
                     >
-                        Start crushing it 💪
+                        Start Crushing It
                     </HapticButton>
 
                     <Text style={styles.privacyNote}>
@@ -233,10 +265,9 @@ const styles = StyleSheet.create({
     },
     optionCardSelected: {
         borderColor: colors.action,
-        backgroundColor: colors.actionMuted,
+        backgroundColor: 'rgba(255, 107, 53, 0.05)',
     },
-    optionEmoji: {
-        fontSize: 20,
+    optionIcon: {
         marginRight: spacing.sm,
     },
     optionLabel: {

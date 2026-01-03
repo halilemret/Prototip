@@ -1,8 +1,6 @@
-// ============================================
-// ONYX - Theme Constants
-// ============================================
+export type ThemeType = 'light' | 'dark';
 
-export const colors = {
+export const darkColors = {
     // Core Background
     bg: '#0A0A0A',
     surface: '#141414',
@@ -14,7 +12,7 @@ export const colors = {
     textSecondary: '#A0A0A0',
     muted: '#6B6B6B',
 
-    // Action (Single brand color - Brutalist approach)
+    // Action
     action: '#FF6B35',
     actionHover: '#FF8255',
     actionMuted: 'rgba(255, 107, 53, 0.15)',
@@ -29,13 +27,51 @@ export const colors = {
 
     // Battery/Mood levels
     battery: {
-        1: '#EF4444', // Empty - Red
-        2: '#F97316', // Low - Orange
-        3: '#FBBF24', // Medium - Yellow
-        4: '#84CC16', // Good - Lime
-        5: '#4ADE80', // Full - Green
+        1: '#EF4444',
+        2: '#F97316',
+        3: '#FBBF24',
+        4: '#84CC16',
+        5: '#4ADE80',
     },
-} as const;
+};
+
+export const lightColors = {
+    // Core Background
+    bg: '#FAFAFA',
+    surface: '#FFFFFF',
+    elevated: '#F2F2F2',
+    border: '#E5E5E5',
+
+    // Text
+    text: '#0A0A0A',
+    textSecondary: '#404040',
+    muted: '#737373',
+
+    // Action
+    action: '#FF6B35',
+    actionHover: '#FF8255',
+    actionMuted: 'rgba(255, 107, 53, 0.1)',
+
+    // Semantic
+    success: '#16A34A',
+    successMuted: 'rgba(22, 163, 74, 0.1)',
+    warning: '#D97706',
+    warningMuted: 'rgba(217, 119, 6, 0.1)',
+    danger: '#DC2626',
+    dangerMuted: 'rgba(220, 38, 38, 0.1)',
+
+    // Battery/Mood levels
+    battery: {
+        1: '#DC2626',
+        2: '#EA580C',
+        3: '#D97706',
+        4: '#65A30D',
+        5: '#16A34A',
+    },
+};
+
+// Default export for migration (will be removed once useTheme is fully implemented)
+export const colors = darkColors;
 
 export const spacing = {
     xs: 4,

@@ -20,6 +20,7 @@ import { useTaskStore } from '@/stores/task.store';
 import { AIService } from '@/services/ai.service';
 import { colors, spacing, typography, borderRadius } from '@/constants/theme';
 import { MAX_TASK_LENGTH } from '@/constants/app';
+import { Sparkles } from 'lucide-react-native';
 
 export default function FirstTaskScreen() {
     const [task, setTask] = useState('');
@@ -138,8 +139,9 @@ export default function FirstTaskScreen() {
                             onPress={handleBreakdown}
                             isLoading={isLoading}
                             isDisabled={!task.trim() || isOverLimit}
+                            leftIcon={<Sparkles size={20} color={colors.bg} />}
                         >
-                            Break it down ✨
+                            Break it down
                         </HapticButton>
 
                         <Text style={styles.hint}>

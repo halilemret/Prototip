@@ -4,8 +4,9 @@
 
 import { create } from 'zustand';
 import { MoodLevel, MoodEntry } from '@/types';
-import { StorageService } from '@/services/storage.service';
+import { StorageService, storage } from '@/services/storage.service';
 import { FREE_DAILY_BREAKDOWNS } from '@/constants/app';
+import { ThemeType } from '@/constants/theme';
 
 interface UserState {
     // State
@@ -21,6 +22,8 @@ interface UserState {
     level: number;
     streak: number;
     lastActivityDate: string | null;
+    language: 'en' | 'tr';
+    theme: ThemeType;
 
     // Actions
     hydrate: () => void;
@@ -31,6 +34,8 @@ interface UserState {
     canUseBreakdown: () => boolean;
     getRemainingBreakdowns: () => number;
     setHapticsEnabled: (enabled: boolean) => void;
+    setLanguage: (lang: 'en' | 'tr') => void;
+    setTheme: (theme: ThemeType) => void;
 
     // Gamification Actions
     addXp: (amount: number) => void;
@@ -45,6 +50,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     dailyBreakdownLimit: FREE_DAILY_BREAKDOWNS,
     hapticsEnabled: true,
     isHydrated: false,
+    language: 'en',
+    theme: 'dark',
 
     // Hydrate state from storage
     hydrate: () => {
@@ -52,6 +59,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         const currentMood = StorageService.getCurrentMood();
         const dailyBreakdownsUsed = StorageService.getDailyBreakdownCount();
         const hapticsEnabled = StorageService.getHapticsEnabled();
+        const language = StorageService.getLanguage();
+        const theme = (storage.getString('onyx:theme') as ThemeType) || 'dark';
 
         // Gamification
         const xp = StorageService.getXp();
@@ -64,6 +73,7 @@ export const useUserStore = create<UserState>((set, get) => ({
             currentMood,
             dailyBreakdownsUsed,
             hapticsEnabled,
+            theme,
             xp,
             level,
             streak,
@@ -113,6 +123,18 @@ export const useUserStore = create<UserState>((set, get) => ({
     setHapticsEnabled: (enabled: boolean) => {
         StorageService.setHapticsEnabled(enabled);
         set({ hapticsEnabled: enabled });
+    },
+
+    // Set language
+    setLanguage: (lang: 'en' | 'tr') => {
+        StorageService.setLanguage(lang);
+        set({ language: lang });
+    },
+
+    // Set theme
+    setTheme: (theme: ThemeType) => {
+        storage.set('onyx:theme', theme);
+        set({ theme });
     },
 
     // Gamification
