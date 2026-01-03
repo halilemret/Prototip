@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Candy, Circle, Zap } from 'lucide-react-native';
 import { MicroStep } from '@/types';
-import { colors, spacing, borderRadius, shadows, typography } from '@/constants/theme';
+import { spacing, borderRadius, typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/useTheme';
 import HapticButton from './HapticButton';
+import { GlassSurface } from './Glass';
 import { useTranslation } from '@/hooks/useTranslation';
 
 interface StepCardProps {
@@ -22,29 +25,42 @@ export const StepCard: React.FC<StepCardProps> = ({
     onSkip,
     isCompleting = false,
 }) => {
+    const { colors } = useTheme();
     const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     const getDifficultyIndicator = () => {
-        if (step.isCandy) return '🍬';
+        if (step.isCandy) {
+            return <Candy size={20} color={colors.action} />;
+        }
 
         switch (step.difficultyScore) {
-            case 1: return '💚';
-            case 2: return '💛';
-            case 3: return '🧡';
-            default: return '';
+            case 1:
+                return <Circle size={18} color={colors.success} fill={colors.success} />;
+            case 2:
+                return <Circle size={18} color={colors.warning} fill={colors.warning} />;
+            case 3:
+                return <Circle size={18} color={colors.danger} fill={colors.danger} />;
+            default:
+                return null;
         }
     };
 
     return (
-        <View style={styles.container}>
+        <GlassSurface
+            variant="card"
+            intensity="medium"
+            accentGlow={step.isCandy}
+            style={styles.container}
+        >
             {/* Progress indicator */}
             <View style={styles.progressRow}>
                 <Text style={styles.progressText}>
                     {t.focus.stepLabel} {stepNumber} {t.focus.ofLabel} {totalSteps}
                 </Text>
-                <Text style={styles.difficultyIcon}>
+                <View style={styles.difficultyIcon}>
                     {getDifficultyIndicator()}
-                </Text>
+                </View>
             </View>
 
             {/* Step content */}
@@ -57,6 +73,7 @@ export const StepCard: React.FC<StepCardProps> = ({
             {/* Candy badge */}
             {step.isCandy && (
                 <View style={styles.candyBadge}>
+                    <Zap size={14} color={colors.action} />
                     <Text style={styles.candyText}>{t.focus.easyWinBadge}</Text>
                 </View>
             )}
@@ -84,7 +101,7 @@ export const StepCard: React.FC<StepCardProps> = ({
                     {t.focus.skipAction}
                 </HapticButton>
             </View>
-        </View>
+        </GlassSurface>
     );
 };
 
@@ -100,8 +117,19 @@ export const StepPreview: React.FC<StepPreviewProps> = ({
     index,
     isBlurred = false,
 }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
+
     return (
-        <View style={[styles.previewContainer, isBlurred && styles.previewBlurred]}>
+        <GlassSurface
+            variant="surface"
+            intensity="light"
+            noShadow
+            style={isBlurred
+                ? { ...styles.previewContainer, ...styles.previewBlurred }
+                : styles.previewContainer
+            }
+        >
             <View style={styles.previewNumber}>
                 <Text style={styles.previewNumberText}>{index + 1}</Text>
             </View>
@@ -112,20 +140,15 @@ export const StepPreview: React.FC<StepPreviewProps> = ({
                 {step.text}
             </Text>
             {step.isCandy && (
-                <Text style={styles.previewCandy}>🍬</Text>
+                <Candy size={16} color={colors.action} />
             )}
-        </View>
+        </GlassSurface>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.xl,
         padding: spacing.xl,
-        ...shadows.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
     progressRow: {
         flexDirection: 'row',
@@ -138,9 +161,13 @@ const styles = StyleSheet.create({
         color: colors.muted,
         fontWeight: '600',
         letterSpacing: 2,
+        textTransform: 'uppercase',
     },
     difficultyIcon: {
-        fontSize: 20,
+        width: 24,
+        height: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     content: {
         paddingVertical: spacing.xl,
@@ -155,12 +182,15 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     candyBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
         alignSelf: 'center',
         backgroundColor: colors.actionMuted,
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
         borderRadius: borderRadius.full,
         marginBottom: spacing.lg,
+        gap: spacing.xs,
     },
     candyText: {
         color: colors.action,
@@ -179,12 +209,8 @@ const styles = StyleSheet.create({
     previewContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
         padding: spacing.md,
         marginBottom: spacing.sm,
-        borderWidth: 1,
-        borderColor: colors.border,
     },
     previewBlurred: {
         opacity: 0.4,
@@ -210,10 +236,6 @@ const styles = StyleSheet.create({
     },
     previewTextBlurred: {
         color: colors.muted,
-    },
-    previewCandy: {
-        marginLeft: spacing.sm,
-        fontSize: 16,
     },
 });
 

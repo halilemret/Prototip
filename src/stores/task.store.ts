@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import { Task, MicroStep, CompletedTask, MoodLevel, MagicBreakdownResponse } from '@/types';
 import { StorageService } from '@/services/storage.service';
 import { useUserStore } from '@/stores/user.store';
+import { useAchievementStore } from '@/stores/achievement.store';
 
 interface TaskState {
     // State
@@ -31,6 +32,7 @@ interface TaskState {
     completeTask: (moodAtEnd?: MoodLevel) => CompletedTask | null;
     abandonTask: () => void;
     forgiveTask: () => void;
+    resumeFromBacklog: (taskId: string) => void;
     setLoading: (loading: boolean) => void;
 }
 
@@ -221,6 +223,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
             };
             StorageService.setCurrentTask(updatedTask);
             set({ currentTask: updatedTask });
+
+            // Achievement: Track candy usage
+            useAchievementStore.getState().checkAndUnlock('candy');
         }
     },
 
@@ -269,7 +274,20 @@ export const useTaskStore = create<TaskState>((set, get) => ({
             useUserStore.getState().addXp(xpAwarded);
         }
 
+        // Check for bet win achievement
+        if (xpAwarded === 100) {
+            useAchievementStore.getState().checkAndUnlock('bet_won');
+        }
+
         useUserStore.getState().updateStreak();
+
+        // Achievement: Track task completion and time-based
+        useAchievementStore.getState().checkAndUnlock('task');
+        useAchievementStore.getState().checkAndUnlock('time_based');
+
+        // Check streak achievements
+        const currentStreak = useUserStore.getState().streak;
+        useAchievementStore.getState().checkAndUnlock('streak', currentStreak);
 
         return completedTask;
     },
@@ -291,6 +309,31 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
         set({
             currentTask: null,
+            backlog: updatedBacklog,
+        });
+
+        // Achievement: Track forgiveness usage
+        useAchievementStore.getState().checkAndUnlock('forgiveness');
+    },
+
+    // Resume a task from backlog (Task Prioritization)
+    resumeFromBacklog: (taskId: string) => {
+        const { backlog, currentTask } = get();
+        const taskToResume = backlog.find(t => t.id === taskId);
+        if (!taskToResume) return;
+
+        // If there's an active task, move it to backlog first
+        let updatedBacklog = backlog.filter(t => t.id !== taskId);
+        if (currentTask) {
+            updatedBacklog = [currentTask, ...updatedBacklog].slice(0, 50);
+        }
+
+        // Set the resumed task as current
+        StorageService.setBacklog(updatedBacklog);
+        StorageService.setCurrentTask(taskToResume);
+
+        set({
+            currentTask: taskToResume,
             backlog: updatedBacklog,
         });
     },

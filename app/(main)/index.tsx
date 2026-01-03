@@ -11,13 +11,18 @@ import {
     HapticButton,
     StepCard,
     SkeletonStepCard,
+    GlassSurface,
 } from '@/components';
 import {
     Settings,
     Wind,
     Plus,
     Zap,
-    History as HistoryIcon
+    History as HistoryIcon,
+    Clock,
+    Play,
+    Trophy,
+    Timer
 } from 'lucide-react-native';
 import { useUserStore } from '@/stores/user.store';
 import { useTaskStore } from '@/stores/task.store';
@@ -53,6 +58,8 @@ export default function FocusViewScreen() {
     const skipCurrentStep = useTaskStore((state) => state.skipCurrentStep);
     const jumpToCandy = useTaskStore((state) => state.jumpToCandy);
     const completeTask = useTaskStore((state) => state.completeTask);
+    const backlog = useTaskStore((state) => state.backlog);
+    const resumeFromBacklog = useTaskStore((state) => state.resumeFromBacklog);
 
     // Premium features
     const { remainingBreakdowns, isPremium } = usePremiumFeature();
@@ -108,12 +115,17 @@ export default function FocusViewScreen() {
     const currentStep = getCurrentStep();
     const progress = getProgress();
 
+    // Check if there's an available candy step to jump to
+    const hasCandyStep = currentTask?.microSteps.some(
+        s => !s.isCompleted && (s.isCandy || s.difficultyScore === 1)
+    ) ?? false;
+
     // Handle step completion
     const handleComplete = async () => {
         if (!currentStep) return;
 
         setIsCompleting(true);
-        haptics.success();
+        haptics.stepComplete();
 
         // Small delay for animation feel
         await new Promise((resolve) => setTimeout(resolve, 300));
@@ -125,7 +137,7 @@ export default function FocusViewScreen() {
         if (newProgress.percentage === 100) {
             // Delay task complete modal slightly
             setTimeout(() => {
-                haptics.heavy();
+                haptics.taskComplete();
 
                 // Calculate final XP display (basic 50 + potential bet bonus)
                 // Note: The store handles the actual add logic, this is just for display
@@ -158,8 +170,13 @@ export default function FocusViewScreen() {
     };
 
     const handleCandy = () => {
-        haptics.medium();
+        haptics.candyJump();
         jumpToCandy();
+    };
+
+    const handleResumeBacklog = (taskId: string) => {
+        haptics.medium();
+        resumeFromBacklog(taskId);
     };
 
     const handleNewTask = () => {
@@ -172,6 +189,14 @@ export default function FocusViewScreen() {
 
     const handleOpenSettings = () => {
         router.push('/(main)/settings');
+    };
+
+    const handleOpenMuseum = () => {
+        router.push('/(main)/museum' as any);
+    };
+
+    const handleOpenFocusTimer = () => {
+        router.push('/(main)/focus-timer' as any);
     };
 
     const styles = createStyles(colors);
@@ -189,6 +214,12 @@ export default function FocusViewScreen() {
                                 <View style={[styles.miniXpFill, { width: `${xpPercent}%` }]} />
                             </View>
                         </View>
+                        <Pressable onPress={handleOpenMuseum} style={styles.iconButton}>
+                            <Trophy size={22} color={colors.action} />
+                        </Pressable>
+                        <Pressable onPress={handleOpenFocusTimer} style={styles.iconButton}>
+                            <Timer size={22} color={colors.textSecondary} />
+                        </Pressable>
                         <Pressable onPress={handleOpenSettings} style={styles.iconButton}>
                             <Settings size={22} color={colors.textSecondary} />
                         </Pressable>
@@ -202,6 +233,34 @@ export default function FocusViewScreen() {
                         {t.focus.noTasks}
                     </Text>
                 </View>
+
+                {/* Next Up Preview - from backlog */}
+                {backlog.length > 0 && (
+                    <GlassSurface
+                        variant="card"
+                        intensity="light"
+                        style={styles.nextUpContainer}
+                    >
+                        <View style={styles.nextUpHeader}>
+                            <Clock size={14} color={colors.muted} />
+                            <Text style={styles.nextUpLabel}>
+                                {language === 'tr' ? 'Sırada' : 'Next Up'}
+                            </Text>
+                        </View>
+                        <Text style={styles.nextUpTitle} numberOfLines={2}>
+                            {backlog[0].originalText}
+                        </Text>
+                        <Pressable
+                            onPress={() => handleResumeBacklog(backlog[0].id)}
+                            style={styles.nextUpAction}
+                        >
+                            <Play size={14} color={colors.action} fill={colors.action} />
+                            <Text style={styles.nextUpActionText}>
+                                {language === 'tr' ? 'Devam Et' : 'Resume'}
+                            </Text>
+                        </Pressable>
+                    </GlassSurface>
+                )}
 
                 <View style={styles.footer}>
                     <HapticButton
@@ -261,6 +320,12 @@ export default function FocusViewScreen() {
                             <View style={[styles.miniXpFill, { width: `${xpPercent}%` }]} />
                         </View>
                     </View>
+                    <Pressable onPress={handleOpenMuseum} style={styles.iconButton}>
+                        <Trophy size={22} color={colors.action} />
+                    </Pressable>
+                    <Pressable onPress={handleOpenFocusTimer} style={styles.iconButton}>
+                        <Timer size={22} color={colors.textSecondary} />
+                    </Pressable>
                     <Pressable onPress={handleOpenSettings} style={styles.iconButton}>
                         <Settings size={22} color={colors.textSecondary} />
                     </Pressable>
@@ -298,8 +363,12 @@ export default function FocusViewScreen() {
                 )}
             </View>
 
-            {/* Bottom Actions */}
-            <View style={styles.bottomActions}>
+            {/* Bottom Actions - Glass Effect */}
+            <GlassSurface
+                variant="floating"
+                intensity="light"
+                style={styles.bottomActions}
+            >
                 <HapticButton
                     variant="secondary"
                     size="md"
@@ -313,11 +382,13 @@ export default function FocusViewScreen() {
                     variant="secondary"
                     size="md"
                     onPress={handleCandy}
-                    leftIcon={<Zap size={18} color={colors.action} />}
+                    leftIcon={<Zap size={18} color={hasCandyStep ? colors.action : colors.muted} />}
+                    disabled={!hasCandyStep}
+                    style={{ opacity: hasCandyStep ? 1 : 0.5 }}
                 >
                     {t.focus.easyWin}
                 </HapticButton>
-            </View>
+            </GlassSurface>
 
 
             {/* Modals */}
@@ -462,6 +533,47 @@ const createStyles = (colors: any) => StyleSheet.create({
         position: 'absolute',
         bottom: 150,
         right: 24,
+    },
+
+    // Next Up Preview
+    nextUpContainer: {
+        marginHorizontal: spacing.md,
+        marginBottom: spacing.lg,
+        padding: spacing.md,
+    },
+    nextUpHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        marginBottom: spacing.sm,
+    },
+    nextUpLabel: {
+        fontSize: typography.xs,
+        fontWeight: '600',
+        color: colors.muted,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    nextUpTitle: {
+        fontSize: typography.base,
+        color: colors.text,
+        fontWeight: '500',
+        marginBottom: spacing.md,
+    },
+    nextUpAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: spacing.xs,
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.actionMuted,
+        borderRadius: borderRadius.sm,
+    },
+    nextUpActionText: {
+        fontSize: typography.sm,
+        fontWeight: '600',
+        color: colors.action,
     },
 });
 

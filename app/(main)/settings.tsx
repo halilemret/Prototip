@@ -22,8 +22,8 @@ import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { StorageService } from '@/services/storage.service';
 import { AIService } from '@/services/ai.service';
 import { RevenueCatService } from '@/services/revenuecat.service';
-import { HapticButton, SkeletonSettings } from '@/components';
-import { spacing, typography, borderRadius } from '@/constants/theme';
+import { HapticButton, SkeletonSettings, GlassSurface } from '@/components';
+import { spacing, typography, borderRadius, glassTokens } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { PREMIUM_FEATURES } from '@/constants/app';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -41,7 +41,8 @@ import {
     Zap,
     BarChart3,
     Infinity as InfinityIcon,
-    AlertOctagon
+    AlertOctagon,
+    Trophy
 } from 'lucide-react-native';
 
 export default function SettingsScreen() {
@@ -145,7 +146,9 @@ export default function SettingsScreen() {
                 <Pressable onPress={handleBack} style={styles.backButton}>
                     <ChevronLeft size={28} color={colors.text} />
                 </Pressable>
-                <Text style={styles.screenTitle}>Settings</Text>
+                <Text style={styles.screenTitle}>
+                    {language === 'tr' ? 'Ayarlar' : 'Settings'}
+                </Text>
                 <View style={styles.placeholder} />
             </View>
 
@@ -154,16 +157,18 @@ export default function SettingsScreen() {
             ) : (
                 <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                     {/* Profile & Level Section */}
-                    {/* ... (rest of the content) */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>{t.settings.profile}</Text>
-                        <View style={styles.profileCard}>
+
+                        <GlassSurface variant="card" intensity="medium" style={styles.profileCard}>
                             <View style={styles.profileHeader}>
                                 <View style={styles.levelBadge}>
                                     <Text style={styles.levelText}>{useUserStore.getState().level}</Text>
                                 </View>
                                 <View style={styles.profileInfo}>
-                                    <Text style={styles.profileName}>Explorer</Text>
+                                    <Text style={styles.profileName}>
+                                        {language === 'tr' ? 'Kaşif' : 'Explorer'}
+                                    </Text>
                                     <Text style={styles.profileXp}>{useUserStore.getState().xp} XP</Text>
                                 </View>
                                 <View style={styles.streakContainer}>
@@ -183,10 +188,34 @@ export default function SettingsScreen() {
                                     />
                                 </View>
                                 <Text style={styles.levelNext}>
-                                    Next Level: {100 * Math.pow(useUserStore.getState().level, 2)} XP
+                                    {language === 'tr' ? 'Sonraki Seviye' : 'Next Level'}: {100 * Math.pow(useUserStore.getState().level, 2)} XP
                                 </Text>
                             </View>
-                        </View>
+                        </GlassSurface>
+
+                        {/* Museum Link - Separate GlassSurface */}
+                        <GlassSurface
+                            variant="card"
+                            intensity="light"
+                            accentGlow
+                            style={styles.museumCard}
+                        >
+                            <Pressable
+                                style={styles.museumLink}
+                                onPress={() => router.push('/(main)/museum' as any)}
+                            >
+                                <Trophy size={22} color={colors.action} />
+                                <View style={styles.museumTextContainer}>
+                                    <Text style={styles.museumLinkText}>
+                                        {language === 'tr' ? 'Başarı Müzesi' : 'Museum of Done'}
+                                    </Text>
+                                    <Text style={styles.museumSubtext}>
+                                        {language === 'tr' ? 'Rozetlerini gör' : 'View your achievements'}
+                                    </Text>
+                                </View>
+                                <ChevronRight size={22} color={colors.action} />
+                            </Pressable>
+                        </GlassSurface>
                     </View>
 
                     {/* Subscription Section */}
@@ -537,11 +566,7 @@ const createStyles = (colors: any) => StyleSheet.create({
 
     // Profile Card
     profileCard: {
-        backgroundColor: colors.surface,
-        borderRadius: borderRadius.lg,
         padding: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
         marginBottom: spacing.md,
     },
     profileHeader: {
@@ -647,5 +672,29 @@ const createStyles = (colors: any) => StyleSheet.create({
         fontSize: typography.xs,
         fontWeight: '600',
         color: colors.muted,
+    },
+
+    // Museum Link
+    museumCard: {
+        marginTop: spacing.md,
+        padding: spacing.md,
+    },
+    museumLink: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    museumTextContainer: {
+        flex: 1,
+    },
+    museumLinkText: {
+        fontSize: typography.base,
+        fontWeight: '700',
+        color: colors.action,
+    },
+    museumSubtext: {
+        fontSize: typography.xs,
+        color: colors.muted,
+        marginTop: 2,
     },
 });

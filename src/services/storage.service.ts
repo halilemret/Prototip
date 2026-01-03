@@ -226,6 +226,10 @@ export const StorageService = {
     setPersonalization: (data: Record<string, unknown>): void => {
         setItemSync('onyx:personalization' as StorageKeys, data);
     },
+
+    // Generic Access
+    getItem: getItem,
+    setItem: setItem,
 };
 
 // Also export storage-like interface for compatibility

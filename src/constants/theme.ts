@@ -135,6 +135,66 @@ export const shadows = {
     },
 } as const;
 
+// ============================================
+// iOS 26 Liquid Glass Design Tokens
+// ============================================
+export const glassTokens = {
+    // Blur intensity levels
+    blur: {
+        light: 20,
+        medium: 40,
+        heavy: 60,
+        ultraHeavy: 80,
+    },
+
+    // Surface opacity for glass effect (dark mode)
+    darkOpacity: {
+        primary: 0.65,
+        secondary: 0.45,
+        tertiary: 0.25,
+        overlay: 0.85,
+    },
+
+    // Surface opacity for glass effect (light mode)
+    lightOpacity: {
+        primary: 0.75,
+        secondary: 0.55,
+        tertiary: 0.35,
+        overlay: 0.90,
+    },
+
+    // Border glow for glass edges
+    borderGlow: {
+        dark: 'rgba(255, 255, 255, 0.18)',
+        light: 'rgba(0, 0, 0, 0.08)',
+        accent: 'rgba(255, 107, 53, 0.4)',
+    },
+
+    // Inner highlight for 3D depth
+    innerHighlight: {
+        dark: 'rgba(255, 255, 255, 0.05)',
+        light: 'rgba(255, 255, 255, 0.8)',
+    },
+
+    // Glass shadow for floating effect
+    glassShadow: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 24,
+        elevation: 12,
+    },
+
+    // Soft glow shadow for cards
+    glowShadow: {
+        shadowColor: '#FF6B35',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 8,
+    },
+} as const;
+
 // Animation durations
 export const animations = {
     fast: 150,

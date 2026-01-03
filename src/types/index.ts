@@ -109,6 +109,9 @@ export enum StorageKeys {
     LAST_ACTIVITY_DATE = 'onyx:last_activity_date',
     TASK_BACKLOG = 'onyx:task_backlog',
     USER_LANGUAGE = 'onyx:user_language',
+    TIMER_SETTINGS = 'onyx:timer_settings',
+    TIMER_STATS = 'onyx:timer_stats',
+    TIMER_STATE = 'onyx:timer_state',
 }
 
 // -------------------- Navigation --------------------

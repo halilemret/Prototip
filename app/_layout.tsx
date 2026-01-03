@@ -12,7 +12,10 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useSubscriptionStore } from '@/stores/subscription.store';
 import { StorageService } from '@/services/storage.service';
 import { NotificationService } from '@/services/notification.service';
+import { DeepLinkService } from '@/services/deep-link.service';
+import { useAchievementStore } from '@/stores/achievement.store';
 import { ErrorBoundary } from '@/components';
+import { AchievementUnlockToast } from '@/components/Gamification/AchievementUnlockToast';
 import { colors, darkColors, lightColors } from '@/constants/theme';
 import '../global.css';
 
@@ -23,6 +26,7 @@ function AppContent() {
 
     const hydrateUser = useUserStore((state) => state.hydrate);
     const hydrateTask = useTaskStore((state) => state.hydrate);
+    const hydrateAchievements = useAchievementStore((state) => state.hydrate);
     const initAuth = useAuthStore((state) => state.initialize);
     const initSubscription = useSubscriptionStore((state) => state.initialize);
 
@@ -35,6 +39,7 @@ function AppContent() {
                 // Then hydrate stores from cache
                 hydrateUser();
                 hydrateTask();
+                hydrateAchievements();
 
                 // Initialize Auth & RevenueCat (non-blocking)
                 initAuth().catch(console.warn);
@@ -49,6 +54,8 @@ function AppContent() {
                     }
                 });
 
+                // Initialize Deep Linking
+                DeepLinkService.initialize();
 
                 setIsReady(true);
             } catch (error) {
@@ -58,7 +65,7 @@ function AppContent() {
         };
 
         initializeApp();
-    }, [hydrateUser, hydrateTask, initAuth, initSubscription]);
+    }, [hydrateUser, hydrateTask, hydrateAchievements, initAuth, initSubscription]);
 
     if (!isReady) {
         return (
@@ -79,6 +86,7 @@ function AppContent() {
                     animation: 'fade',
                 }}
             />
+            <AchievementUnlockToast />
         </>
     );
 }
